@@ -1,4 +1,8 @@
 from __future__ import absolute_import, division, print_function
+from gym.spaces import Box, Discrete
+import yaml
+from pathlib import Path
+import os.path as osp
 
 import time
 from os import replace
@@ -9,11 +13,7 @@ from smacv2.env import StarCraft2Env
 from smacv2.env.starcraft2.wrapper import StarCraftCapabilityEnvWrapper
 
 logging.set_verbosity(logging.DEBUG)
-import os.path as osp
-from pathlib import Path
-import yaml
 
-from gym.spaces import Box, Discrete
 
 class SMACv2Env:
 
@@ -52,20 +52,23 @@ class SMACv2Env:
         self.n_agents = env_info["n_agents"]
         self.timeouts = self.env.env.timeouts
 
-        self.share_observation_space = self.repeat(Box(low=-np.inf, high=np.inf, shape=(state_shape,)))
-        self.observation_space = self.repeat(Box(low=-np.inf, high=np.inf, shape=(obs_shape,)))
+        self.share_observation_space = self.repeat(
+            Box(low=-np.inf, high=np.inf, shape=(state_shape,)))
+        self.observation_space = self.repeat(
+            Box(low=-np.inf, high=np.inf, shape=(obs_shape,)))
         self.action_space = self.repeat(Discrete(n_actions))
 
     def close(self):
         self.env.close()
 
     def load_map_config(self, map_name):
-        base_path = osp.split(osp.split(osp.dirname(osp.abspath(__file__)))[0])[0]
-        map_config_path = Path(base_path) / "configs" / "env" / "smacv2_map_config" / f"{map_name}.yaml"
+        base_path = osp.split(
+            osp.split(osp.dirname(osp.abspath(__file__)))[0])[0]
+        map_config_path = Path(base_path) / "configs" / \
+            "env" / "smacv2_map_config" / f"{map_name}.yaml"
         with open(str(map_config_path), 'r', encoding='utf-8') as file:
             map_config = yaml.load(file, Loader=yaml.FullLoader)
         return map_config
-
 
     def repeat(self, a):
         return [a for _ in range(self.n_agents)]

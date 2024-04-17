@@ -26,6 +26,7 @@ def _flatten(T, N, x):
 def _sa_cast(x):
     return x.transpose(1, 0, 2).reshape(-1, *x.shape[2:])
 
+
 def _ma_cast(x):
     return x.transpose(1, 2, 0, 3).reshape(-1, *x.shape[3:])
 
@@ -56,7 +57,7 @@ def get_grad_norm(it):
 
 def update_linear_schedule(optimizer, epoch, total_num_epochs, initial_lr):
     """Decreases the learning rate linearly"""
-    lr = initial_lr - (initial_lr * ( (epoch - 1) / float(total_num_epochs)))
+    lr = initial_lr - (initial_lr * ((epoch - 1) / float(total_num_epochs)))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -65,6 +66,7 @@ def softmax(x):
     x = x.copy()
     x -= np.max(x, axis=-1, keepdims=True)
     return np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
+
 
 def huber_loss(e, d):
     a = (abs(e) <= d).float()
@@ -84,6 +86,7 @@ def get_shape_from_obs_space(obs_space):
     else:
         raise NotImplementedError
     return obs_shape
+
 
 def get_obs_space_type(obs_space):
     return obs_space.__class__.__name__
@@ -222,6 +225,7 @@ def make_eval_env(env_name, seed, n_threads, env_args):
     else:
         return ShareSubprocVecEnv([get_env_fn(i) for i in range(n_threads)])
 
+
 def make_render_env(env_name, seed, env_args):
     manual_render = True
     manual_expand_dims = True
@@ -271,7 +275,7 @@ def make_render_env(env_name, seed, env_args):
         env.seed(seed * 60000)
         manual_delay = False
     elif env_name == "rendezvous":
-            # from eir_mappo.envs.rendezvous.rendezvous import RENDEEnv
+        # from eir_mappo.envs.rendezvous.rendezvous import RENDEEnv
         from eir_mappo.env.ma_envs.rendezvous_env import RENDEEnv
         env = RENDEEnv(env_args)
         env.seed(seed * 60000)
@@ -289,9 +293,10 @@ def make_render_env(env_name, seed, env_args):
         env.seed(seed * 60000)
     else:
         print("Can not support the " +
-                env_name + "environment.")
+              env_name + "environment.")
         raise NotImplementedError
     return env, manual_render, manual_expand_dims, manual_delay, env_num
+
 
 def seed(args):
     """Seed the program."""

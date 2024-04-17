@@ -2,3 +2,4 @@ venv
 video
 **/__pycache__
 .vscode
+eir_mappo/results/

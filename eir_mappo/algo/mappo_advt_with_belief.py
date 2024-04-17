@@ -5,21 +5,24 @@ from eir_mappo.util.util import get_grad_norm, check, update_linear_schedule
 from eir_mappo.model.with_belief import Belief
 from eir_mappo.algo.mappo_advt import MAPPOAdvt
 
+
 class MAPPOAdvtBelief(MAPPOAdvt):
     def __init__(self, args, obs_space, act_space, num_agents, device=torch.device("cpu")):
         """Initialize MAPPO algorithm."""
-        super(MAPPOAdvtBelief, self).__init__(args, obs_space, act_space, num_agents, device)
-        
+        super(MAPPOAdvtBelief, self).__init__(
+            args, obs_space, act_space, num_agents, device)
+
         self.belief_lr = args["belief_lr"]
         self.use_recurrent_belief = args["use_recurrent_belief"]
         self.use_belief_active_masks = args["use_belief_active_masks"]
         # create actor network
-        self.belief = Belief(args, self.obs_space, self.act_space, self.num_agents, self.device)
+        self.belief = Belief(args, self.obs_space,
+                             self.act_space, self.num_agents, self.device)
         # create belief optimizer
         self.belief_optimizer = torch.optim.Adam(self.belief.parameters(),
                                                  lr=self.belief_lr, eps=self.opti_eps,
                                                  weight_decay=self.weight_decay)
-        
+
     def lr_decay(self, episode, episodes):
         """Decay the actor and critic learning rates.
         Args:
@@ -27,8 +30,9 @@ class MAPPOAdvtBelief(MAPPOAdvt):
             episodes: (int) total number of training episodes.
         """
         super().lr_decay(episode, episodes)
-        update_linear_schedule(self.belief_optimizer, episode, episodes, self.belief_lr)
-    
+        update_linear_schedule(self.belief_optimizer,
+                               episode, episodes, self.belief_lr)
+
     def get_belief(self, obs, rnn_states_belief, masks, active_masks=None):
         """Compute actions and value function predictions for the given inputs.
         Args:
@@ -39,7 +43,7 @@ class MAPPOAdvtBelief(MAPPOAdvt):
                                  (if None, all actions available)
             deterministic: (bool) whether the action should be mode of distribution or should be sampled.
         """
-        
+
         belief, rnn_states_belief = self.belief(obs[:, :-self.num_agents],
                                                 rnn_states_belief,
                                                 masks)
@@ -68,14 +72,16 @@ class MAPPOAdvtBelief(MAPPOAdvt):
             available_actions_batch,
         ) = sample
 
-        ground_truth_type_batch = check(ground_truth_type_batch).to(**self.tpdv)
+        ground_truth_type_batch = check(
+            ground_truth_type_batch).to(**self.tpdv)
 
         # always soft update when updating belief
-        belief, _ = self.get_belief(obs_batch, 
-                                    belief_rnn_states_batch, 
+        belief, _ = self.get_belief(obs_batch,
+                                    belief_rnn_states_batch,
                                     masks_batch)
 
-        loss = nn.functional.binary_cross_entropy(belief, ground_truth_type_batch, reduction='none')
+        loss = nn.functional.binary_cross_entropy(
+            belief, ground_truth_type_batch, reduction='none')
 
         if self.use_belief_active_masks:
             active_masks_batch = check(active_masks_batch).to(**self.tpdv)
@@ -119,7 +125,7 @@ class MAPPOAdvtBelief(MAPPOAdvt):
             advantages_list = []
             for agent_id in range(num_agents):
                 advantages_list.append(advantages[:, :, agent_id])
-        
+
         # guess no need to use a separate epoch here?
         for _ in range(self.ppo_epoch):
             data_generators = []

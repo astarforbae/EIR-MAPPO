@@ -1,4 +1,3 @@
-
 import time
 import numpy as np
 import torch
@@ -75,7 +74,8 @@ class OnPolicyMARunnerAdvtBelief:
         self.load_adv_actor = algo_args["algo"].get("load_adv_actor", False)
         # whether the adversary has defenders' policies
         self.super_adversary = algo_args["algo"].get("super_adversary", False)
-        self.teacher_forcing = algo_args["algo"].get("teacher_forcing", False)
+        self.teacher_forcing = algo_args["algo"].get(
+            "teacher_forcing", False)  # TODO 这是什么
         self.adapt_adversary = algo_args["algo"].get("adapt_adversary", False)
         self.state_adversary = algo_args["algo"].get("state_adversary", False)
         self.render_mode = algo_args["render"].get("render_mode", None)
@@ -87,6 +87,7 @@ class OnPolicyMARunnerAdvtBelief:
         # TODO: seed --> set_seed
         seed(algo_args["seed"])
         self.device = init_device(algo_args["device"])
+        # 默认self.use_render 为 false
         if not self.use_render:
             self.run_dir, self.log_dir, self.save_dir, self.writter = init_dir(
                 args.env, env_args, args.algo, args.exp_name, algo_args["seed"]["seed"])
@@ -103,6 +104,7 @@ class OnPolicyMARunnerAdvtBelief:
             if self.env_name == "toy":
                 from eir_mappo.env.toy_example.toy_example import ToyExample
                 self.toy_env = ToyExample(env_args)
+            # self.envs = ShareDummyVecEnv([StarCraft2Env()])
             self.envs = make_train_env(
                 args.env, algo_args["seed"]["seed"], algo_args["train"]["n_rollout_threads"], env_args)
             self.eval_envs = make_eval_env(
@@ -119,6 +121,7 @@ class OnPolicyMARunnerAdvtBelief:
         print("action_space: ", self.envs.action_space)
 
         # actor
+        # share_param True: 这里share的是什么
         if self.share_param:
             self.actor = []
             ac = ALGO_REGISTRY[args.algo](
@@ -186,6 +189,7 @@ class OnPolicyMARunnerAdvtBelief:
         print("start running")
         self.warmup()  # reset
 
+        # 参数分别是：40000000, 200, 1
         episodes = int(
             self.num_env_steps) // self.episode_length // self.n_rollout_threads
 
@@ -193,9 +197,10 @@ class OnPolicyMARunnerAdvtBelief:
 
         self.logger.episode_init(0)
 
+        # 评估模型
         if self.use_eval:
             self.prep_rollout()
-            self.eval()
+            self.eval()  # 这个地方打开很多窗口
             if self.state_adversary:
                 self.eval_adv_state()
                 return
@@ -204,10 +209,12 @@ class OnPolicyMARunnerAdvtBelief:
                     self.eval_adv()
 
         for episode in range(1, episodes + 1):
+            # TODO 这里为什么要分
             if episode > episodes / 2:
                 self.teacher_forcing = False
             else:
                 self.save_checkpoint = True
+                # TODO 更新方式？
                 self.belief_prob = 1 - (episode - 1) / (episodes / 2)
             self.ground_truth_type = np.zeros(
                 (self.n_rollout_threads, self.num_agents, self.num_agents))
@@ -221,15 +228,16 @@ class OnPolicyMARunnerAdvtBelief:
 
             self.logger.episode_init(episode)
 
-            self.prep_rollout()
+            self.prep_rollout()  # TODO 不计算梯度，前向传播，意义？
             if self.random_adversary:
-                if self.adapt_adversary:
+                if self.adapt_adversary:  # TODO 这个参数的意思？
                     self.agent_adversary = np.random.choice(
-                        range(self.num_agents), p=softmax(-1 * self.adapt_adv_probs / 1))
+                        range(self.num_agents), p=softmax(-1 * self.adapt_adv_probs / 1))  # 这里是怎么算的
                 else:
                     self.agent_adversary = np.random.choice(
                         range(self.num_agents))
-            if episode % self.victim_interval == 0:  # which means some episodes are not adversary
+            # which means some episodes are not adversary
+            if episode % self.victim_interval == 0:
                 self.episode_adversary = (np.random.rand(
                     self.n_rollout_threads) < self.adv_prob)
             else:
@@ -709,7 +717,7 @@ class OnPolicyMARunnerAdvtBelief:
         self.logger.eval_init()
         eval_episode = 0
 
-        eval_obs, eval_share_obs, eval_available_actions = self.eval_envs.reset()
+        eval_obs, eval_share_obs, eval_available_actions = self.eval_envs.reset()  # 这里打开很多窗口
 
         eval_rnn_states = np.zeros((self.n_eval_rollout_threads, self.num_agents,
                                    self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
@@ -1597,7 +1605,7 @@ class OnPolicyMARunnerAdvtBelief:
         np.save("traj/done.npy", np.array(done_traj))
 
     def prep_rollout(self):
-        for agent_id in range(self.num_agents):
+        for agent_id in range(self.num_agents):  # 4个agents
             self.actor[agent_id].prep_rollout()
         self.critic.prep_rollout()
 

@@ -333,13 +333,15 @@ def shareworker(remote, parent_remote, env_fn_wrapper):
                 if done:
                     info[0]["original_obs"] = copy.deepcopy(ob)
                     info[0]["original_state"] = copy.deepcopy(s_ob)
-                    info[0]["original_avail_actions"] = copy.deepcopy(available_actions)
+                    info[0]["original_avail_actions"] = copy.deepcopy(
+                        available_actions)
                     ob, s_ob, available_actions = env.reset()
             else:
                 if np.all(done):
                     info[0]["original_obs"] = copy.deepcopy(ob)
                     info[0]["original_state"] = copy.deepcopy(s_ob)
-                    info[0]["original_avail_actions"] = copy.deepcopy(available_actions)
+                    info[0]["original_avail_actions"] = copy.deepcopy(
+                        available_actions)
                     ob, s_ob, available_actions = env.reset()
 
             remote.send((ob, s_ob, reward, done, info, available_actions))
@@ -763,13 +765,15 @@ class ShareDummyVecEnv(ShareVecEnv):
                 if done:
                     infos[i][0]["original_obs"] = copy.deepcopy(obs[i])
                     infos[i][0]["original_state"] = copy.deepcopy(share_obs[i])
-                    infos[i][0]["original_avail_actions"] = copy.deepcopy(available_actions[i])
+                    infos[i][0]["original_avail_actions"] = copy.deepcopy(
+                        available_actions[i])
                     obs[i], share_obs[i], available_actions[i] = self.envs[i].reset()
             else:
                 if np.all(done):
                     infos[i][0]["original_obs"] = copy.deepcopy(obs[i])
                     infos[i][0]["original_state"] = copy.deepcopy(share_obs[i])
-                    infos[i][0]["original_avail_actions"] = copy.deepcopy(available_actions[i])
+                    infos[i][0]["original_avail_actions"] = copy.deepcopy(
+                        available_actions[i])
                     obs[i], share_obs[i], available_actions[i] = self.envs[i].reset()
         self.actions = None
 

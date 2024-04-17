@@ -248,7 +248,7 @@ class StarCraft2Env(MultiAgentEnv):
             self.obs_own_health = True
         self.n_obs_pathing = 8
         self.n_obs_height = 9
-        
+
         self.obs_agent_adversary = args["obs_agent_adversary"]
         self.reward_only_positive = args.get("reward_only_positive", True)
         self.reward_defeat = args.get("reward_defeat", 0)
@@ -455,8 +455,10 @@ class StarCraft2Env(MultiAgentEnv):
         return local_obs, global_state, available_actions
 
     def load_state_config(self, state_type):
-        base_path = osp.split(osp.split(osp.dirname(osp.abspath(__file__)))[0])[0]
-        state_config_path = Path(base_path) / "configs" / "env" / "smac_state_config" / f"{state_type}.yaml"
+        base_path = osp.split(
+            osp.split(osp.dirname(osp.abspath(__file__)))[0])[0]
+        state_config_path = Path(base_path) / "configs" / \
+            "env" / "smac_state_config" / f"{state_type}.yaml"
         with open(str(state_config_path), 'r', encoding='utf-8') as file:
             state_config = yaml.load(file, Loader=yaml.FullLoader)
         return state_config
@@ -946,7 +948,8 @@ class StarCraft2Env(MultiAgentEnv):
 
     def save_replay(self):
         """Save a replay."""
-        replay_dir = '/root/share/xrx/eir_mappo_adv/{}_replay/'.format(self.map_name)
+        replay_dir = '/root/share/xrx/eir_mappo_adv/{}_replay/'.format(
+            self.map_name)
         prefix = self.replay_prefix or self.map_name
         # replay_dir = self.replay_dir or ""
         replay_path = self._run_config.save_replay(
