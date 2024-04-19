@@ -271,9 +271,9 @@ class OnPolicyMARunnerAdvtBelief:
                         step)
                 input_actions = actions.copy()
 
-                for agent_adv in range(self.agent_adversarys):
+                for agent_adv in self.agent_adversarys:
                     input_actions[self.episode_adversary,
-                                  self.agent_adv] = adv_actions[self.episode_adversary, self.agent_adv]
+                                  agent_adv] = adv_actions[self.episode_adversary, agent_adv]
 
                 # input_actions[self.episode_adversary, self.agent_adversary] = adv_actions[self.episode_adversary, self.agent_adversary]
 
