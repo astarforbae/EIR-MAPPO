@@ -3,21 +3,26 @@ import numpy as np
 from eir_mappo.util.util import _flatten, _sa_cast
 from eir_mappo.common.actor_buffer_advt import ActorBufferAdvt
 
+
 class ActorBufferAdvtBelief(ActorBufferAdvt):
     """
     ActorBuffer contains data for on-policy actors.
     """
+
     def __init__(self, args, obs_space, act_space, num_agents):
-        super(ActorBufferAdvtBelief, self).__init__(args, obs_space, act_space)
+        super(ActorBufferAdvtBelief, self).__init__MAPPOAdvtBelief(
+            args, obs_space, act_space)
         self.num_agents = num_agents
-        self.ground_truth_type = np.zeros((self.episode_length + 1, self.n_rollout_threads, self.num_agents), dtype=np.float32)
+        self.ground_truth_type = np.zeros(
+            (self.episode_length + 1, self.n_rollout_threads, self.num_agents), dtype=np.float32)
         self.belief_rnn_states = np.zeros((self.episode_length + 1, self.n_rollout_threads,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+                                           self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
 
     def insert(self, obs, ground_truth_type, rnn_states, adv_rnn_states, belief_rnn_states, actions, adv_actions, action_log_probs, adv_action_log_probs, rewards, masks, active_masks=None, adv_active_masks=None, available_actions=None):
         self.ground_truth_type[self.step + 1] = ground_truth_type.copy()
         self.belief_rnn_states[self.step + 1] = belief_rnn_states.copy()
-        super().insert(obs, rnn_states, adv_rnn_states, actions, adv_actions, action_log_probs, adv_action_log_probs, rewards, masks, active_masks, adv_active_masks, available_actions)
+        super().insert(obs, rnn_states, adv_rnn_states, actions, adv_actions, action_log_probs,
+                       adv_action_log_probs, rewards, masks, active_masks, adv_active_masks, available_actions)
 
     def after_update(self):
         super().after_update()
@@ -41,12 +46,14 @@ class ActorBufferAdvtBelief(ActorBufferAdvt):
                    for i in range(actor_num_mini_batch)]
 
         if len(self.obs.shape) > 3:
-            obs = self.obs[:-1].transpose(1, 0, 2, 3, 4).reshape(-1, *self.obs.shape[2:])
-            obs_next = self.obs[1:].transpose(1, 0, 2, 3, 4).reshape(-1, *self.obs.shape[2:])
+            obs = self.obs[:-1].transpose(1, 0, 2,
+                                          3, 4).reshape(-1, *self.obs.shape[2:])
+            obs_next = self.obs[1:].transpose(
+                1, 0, 2, 3, 4).reshape(-1, *self.obs.shape[2:])
         else:
             obs = _sa_cast(self.obs[:-1])
             obs_next = _sa_cast(self.obs[1:])
-        
+
         ground_truth_type = _sa_cast(self.ground_truth_type)
         actions = _sa_cast(self.actions)
         adv_actions = _sa_cast(self.adv_actions)
@@ -91,8 +98,10 @@ class ActorBufferAdvtBelief(ActorBufferAdvt):
                 obs_batch.append(obs[ind:ind+data_chunk_length])
                 obs_next_batch.append(obs_next[ind:ind+data_chunk_length])
                 actions_batch.append(actions[ind:ind+data_chunk_length])
-                ground_truth_type_batch.append(ground_truth_type[ind:ind+data_chunk_length])
-                adv_actions_batch.append(adv_actions[ind:ind+data_chunk_length])
+                ground_truth_type_batch.append(
+                    ground_truth_type[ind:ind+data_chunk_length])
+                adv_actions_batch.append(
+                    adv_actions[ind:ind+data_chunk_length])
                 if self.available_actions is not None:
                     available_actions_batch.append(
                         available_actions[ind:ind+data_chunk_length])
@@ -122,14 +131,17 @@ class ActorBufferAdvtBelief(ActorBufferAdvt):
             actions_batch = np.stack(actions_batch, axis=1)
             adv_actions_batch = np.stack(adv_actions_batch, axis=1)
             if self.available_actions is not None:
-                available_actions_batch = np.stack(available_actions_batch, axis=1)
+                available_actions_batch = np.stack(
+                    available_actions_batch, axis=1)
             if self.factor is not None:
                 factor_batch = np.stack(factor_batch, axis=1)
             masks_batch = np.stack(masks_batch, axis=1)
             active_masks_batch = np.stack(active_masks_batch, axis=1)
             adv_active_masks_batch = np.stack(adv_active_masks_batch, axis=1)
-            old_action_log_probs_batch = np.stack(old_action_log_probs_batch, axis=1)
-            old_adv_action_log_probs_batch = np.stack(old_adv_action_log_probs_batch, axis=1)
+            old_action_log_probs_batch = np.stack(
+                old_action_log_probs_batch, axis=1)
+            old_adv_action_log_probs_batch = np.stack(
+                old_adv_action_log_probs_batch, axis=1)
             adv_targ = np.stack(adv_targ, axis=1)
 
             # States is just a (N, -1) from_numpy
@@ -147,7 +159,8 @@ class ActorBufferAdvtBelief(ActorBufferAdvt):
             actions_batch = _flatten(L, N, actions_batch)
             adv_actions_batch = _flatten(L, N, adv_actions_batch)
             if self.available_actions is not None:
-                available_actions_batch = _flatten(L, N, available_actions_batch)
+                available_actions_batch = _flatten(
+                    L, N, available_actions_batch)
             else:
                 available_actions_batch = None
             if self.factor is not None:
@@ -155,15 +168,16 @@ class ActorBufferAdvtBelief(ActorBufferAdvt):
             masks_batch = _flatten(L, N, masks_batch)
             active_masks_batch = _flatten(L, N, active_masks_batch)
             adv_active_masks_batch = _flatten(L, N, adv_active_masks_batch)
-            old_action_log_probs_batch = _flatten(L, N, old_action_log_probs_batch)
-            old_adv_action_log_probs_batch = _flatten(L, N, old_adv_action_log_probs_batch)
+            old_action_log_probs_batch = _flatten(
+                L, N, old_action_log_probs_batch)
+            old_adv_action_log_probs_batch = _flatten(
+                L, N, old_adv_action_log_probs_batch)
             adv_targ = _flatten(L, N, adv_targ)
             if self.factor is not None:
-                yield obs_batch, obs_next_batch, ground_truth_type_batch, rnn_states_batch, adv_rnn_states_batch, belief_rnn_states_batch, actions_batch, adv_actions_batch,\
-                    masks_batch, active_masks_batch, adv_active_masks_batch, old_action_log_probs_batch, old_adv_action_log_probs_batch,\
+                yield obs_batch, obs_next_batch, ground_truth_type_batch, rnn_states_batch, adv_rnn_states_batch, belief_rnn_states_batch, actions_batch, adv_actions_batch, \
+                    masks_batch, active_masks_batch, adv_active_masks_batch, old_action_log_probs_batch, old_adv_action_log_probs_batch, \
                     adv_targ, available_actions_batch, factor_batch
             else:
-                yield obs_batch, obs_next_batch, ground_truth_type_batch, rnn_states_batch, adv_rnn_states_batch, belief_rnn_states_batch, actions_batch, adv_actions_batch,\
-                    masks_batch, active_masks_batch, adv_active_masks_batch, old_action_log_probs_batch, old_adv_action_log_probs_batch,\
+                yield obs_batch, obs_next_batch, ground_truth_type_batch, rnn_states_batch, adv_rnn_states_batch, belief_rnn_states_batch, actions_batch, adv_actions_batch, \
+                    masks_batch, active_masks_batch, adv_active_masks_batch, old_action_log_probs_batch, old_adv_action_log_probs_batch, \
                     adv_targ, available_actions_batch
-    

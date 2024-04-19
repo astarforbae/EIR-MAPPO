@@ -254,8 +254,16 @@ class OnPolicyMARunnerAdvtBelief:
                     adv_rnn_states, belief_rnn_states, rnn_states_critic = self.collect_adv(
                         step)
                 input_actions = actions.copy()
+                print("input_actions")
+                print(input_actions)
+                print("adv_actions")
+                print(adv_actions)
+                print("episode_adversary")
+                print(self.episode_adversary)
                 input_actions[self.episode_adversary,
                               self.agent_adversary] = adv_actions[self.episode_adversary, self.agent_adversary]
+                print("input_actions")
+                print(input_actions)
                 # actions: (n_threads, n_agents, action_dim)
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(
                     input_actions)
