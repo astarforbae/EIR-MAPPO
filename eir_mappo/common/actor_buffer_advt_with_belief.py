@@ -10,7 +10,7 @@ class ActorBufferAdvtBelief(ActorBufferAdvt):
     """
 
     def __init__(self, args, obs_space, act_space, num_agents):
-        super(ActorBufferAdvtBelief, self).__init__MAPPOAdvtBelief(
+        super(ActorBufferAdvtBelief, self).__init__(
             args, obs_space, act_space)
         self.num_agents = num_agents
         self.ground_truth_type = np.zeros(
