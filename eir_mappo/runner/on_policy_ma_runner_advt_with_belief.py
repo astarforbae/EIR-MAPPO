@@ -48,20 +48,24 @@ class OnPolicyMARunnerAdvtBelief:
         self.rnn_hidden_size = self.hidden_sizes[-1]
         self.recurrent_N = algo_args["model"]["recurrent_N"]
         self.action_aggregation = algo_args["algo"]["action_aggregation"]
-        self.central_belief_option = algo_args["algo"].get("central_belief_option", 'mean')
+        self.central_belief_option = algo_args["algo"].get(
+            "central_belief_option", 'mean')
         self.state_type = env_args.get("state_type", "EP")
         # TODO: don't use this default value
         self.share_param = algo_args["algo"].get("share_param", False)
         self.fixed_order = algo_args["algo"].get("fixed_order", False)
         # adv training
-        self.adv_prob = algo_args["algo"].get("adv_prob", 0.5)  # probability of having adversary
-        self.eval_critic_landscape = algo_args["algo"].get("eval_critic_landscape", False)  # probability of having adversary
+        self.adv_prob = algo_args["algo"].get(
+            "adv_prob", 0.5)  # probability of having adversary
+        self.eval_critic_landscape = algo_args["algo"].get(
+            "eval_critic_landscape", False)  # probability of having adversary
         # adding adversary on observation
         self.obs_adversary = env_args.get("obs_agent_adversary", True)
         if not self.obs_adversary:
             print("belief needs environment to provide additional dimensions")
             raise NotImplementedError
-        self.agent_adversary = algo_args["algo"].get("agent_adversary", 0)# who is the adversary
+        self.agent_adversary = algo_args["algo"].get(
+            "agent_adversary", 0)  # who is the adversary
         # use it if update adversary for multiple times
         self.victim_interval = algo_args["algo"].get("victim_interval", 1)
         # if self.agent_adversary<0, then we randomly assign adversary
@@ -69,7 +73,8 @@ class OnPolicyMARunnerAdvtBelief:
         self.episode_adversary = False  # which episode contains the adversary
         self.load_critic = algo_args["algo"].get("load_critic", False)
         self.load_adv_actor = algo_args["algo"].get("load_adv_actor", False)
-        self.super_adversary = algo_args["algo"].get("super_adversary", False)  # whether the adversary has defenders' policies
+        # whether the adversary has defenders' policies
+        self.super_adversary = algo_args["algo"].get("super_adversary", False)
         self.teacher_forcing = algo_args["algo"].get("teacher_forcing", False)
         self.adapt_adversary = algo_args["algo"].get("adapt_adversary", False)
         self.state_adversary = algo_args["algo"].get("state_adversary", False)
@@ -87,7 +92,8 @@ class OnPolicyMARunnerAdvtBelief:
                 args.env, env_args, args.algo, args.exp_name, algo_args["seed"]["seed"])
             save_config(args, algo_args, env_args, self.run_dir)
         # set the title of the process
-        setproctitle.setproctitle(str(args.algo) + "-" + str(args.env) + "-" + str(args.exp_name))
+        setproctitle.setproctitle(
+            str(args.algo) + "-" + str(args.env) + "-" + str(args.exp_name))
 
         # set the config of env
         if self.use_render:
@@ -102,7 +108,8 @@ class OnPolicyMARunnerAdvtBelief:
             self.eval_envs = make_eval_env(
                 args.env, algo_args["seed"]["seed"], algo_args["eval"]["n_eval_rollout_threads"], env_args) if algo_args["eval"]["use_eval"] else None
         self.num_agents = get_num_agents(args.env, env_args, self.envs)
-        self.ground_truth_type = np.zeros((self.n_rollout_threads, self.num_agents, self.num_agents))  # self, belief of others
+        self.ground_truth_type = np.zeros(
+            (self.n_rollout_threads, self.num_agents, self.num_agents))  # self, belief of others
 
         self.adapt_adv_probs = np.zeros(self.num_agents)
         self.reward_max = 0
@@ -161,7 +168,8 @@ class OnPolicyMARunnerAdvtBelief:
                 args, algo_args, env_args, self.num_agents, self.writter, self.run_dir)
 
         if self.state_adversary or self.render_mode == "state":
-            self.fgsm = FGSM(algo_args["algo"], self.obs_adversary, self.actor, device=self.device)
+            self.fgsm = FGSM(
+                algo_args["algo"], self.obs_adversary, self.actor, device=self.device)
 
         if self.model_dir is not None:
             self.restore()
@@ -170,11 +178,13 @@ class OnPolicyMARunnerAdvtBelief:
         self.warmup()
         for step in range(self.episode_length):
             values, actions, adv_actions, action_log_probs, adv_action_log_probs, rnn_states, \
-                adv_rnn_states, belief_rnn_states, rnn_states_critic = self.collect_adv(step)
+                adv_rnn_states, belief_rnn_states, rnn_states_critic = self.collect_adv(
+                    step)
             input_actions = actions.copy()
             input_actions[self.episode_adversary, self.agent_adversary] = adv_actions[
                 self.episode_adversary, self.agent_adversary]
-            obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(input_actions)
+            obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(
+                input_actions)
             data = obs, share_obs, rewards, dones, infos, self.ground_truth_type, available_actions, \
                 values, actions, adv_actions, action_log_probs, adv_action_log_probs, \
                 rnn_states, adv_rnn_states, belief_rnn_states, rnn_states_critic
@@ -196,7 +206,8 @@ class OnPolicyMARunnerAdvtBelief:
         print("start running")
         self.warmup()  # reset
 
-        episodes = int(self.num_env_steps) // self.episode_length // self.n_rollout_threads
+        episodes = int(
+            self.num_env_steps) // self.episode_length // self.n_rollout_threads
 
         self.logger.init(episodes)
 
@@ -217,8 +228,9 @@ class OnPolicyMARunnerAdvtBelief:
                 self.teacher_forcing = False
             else:
                 self.save_checkpoint = True
-                self.belief_prob = 1 -  (episode - 1) / (episodes / 2)
-            self.ground_truth_type = np.zeros((self.n_rollout_threads, self.num_agents, self.num_agents))
+                self.belief_prob = 1 - (episode - 1) / (episodes / 2)
+            self.ground_truth_type = np.zeros(
+                (self.n_rollout_threads, self.num_agents, self.num_agents))
             if self.use_linear_lr_decay:
                 if self.share_param:
                     self.actor[0].lr_decay(episode, episodes)
@@ -232,34 +244,42 @@ class OnPolicyMARunnerAdvtBelief:
             self.prep_rollout()
             if self.random_adversary:
                 if self.adapt_adversary:
-                    self.agent_adversary = np.random.choice(range(self.num_agents), p=softmax(-1 * self.adapt_adv_probs / 1))
-                    self.agent_adversarys = np.random.choice(range(self.num_agents), p=softmax(-1 * self.adapt_adv_probs / 1), size=2, replace=False)
+                    self.agent_adversary = np.random.choice(
+                        range(self.num_agents), p=softmax(-1 * self.adapt_adv_probs / 1))
+                    self.agent_adversarys = np.random.choice(range(
+                        self.num_agents), p=softmax(-1 * self.adapt_adv_probs / 1), size=2, replace=False)
                 else:
-                    self.agent_adversary = np.random.choice(range(self.num_agents))
-                    self.agent_adversarys = np.random.choice(range(self.num_agents), size=2, replace=False)
+                    self.agent_adversary = np.random.choice(
+                        range(self.num_agents))
+                    self.agent_adversarys = np.random.choice(
+                        range(self.num_agents), size=2, replace=False)
             if episode % self.victim_interval == 0:  # which means some episodes are not adversary
-                self.episode_adversary = (np.random.rand(self.n_rollout_threads) < self.adv_prob)
+                self.episode_adversary = (np.random.rand(
+                    self.n_rollout_threads) < self.adv_prob)
             else:
-                self.episode_adversary = (np.random.rand(self.n_rollout_threads) < 2)  # all True
-            
+                self.episode_adversary = (np.random.rand(
+                    self.n_rollout_threads) < 2)  # all True
+
             # kepts the same size as belief for convinence
-            self.ground_truth_type[self.episode_adversary, :, self.agent_adversary] = 1
-            
+            self.ground_truth_type[self.episode_adversary,
+                                   :, self.agent_adversary] = 1
+
             for step in range(self.episode_length):
                 # Sample actions
                 values, actions, adv_actions, action_log_probs, adv_action_log_probs, rnn_states, \
-                    adv_rnn_states, belief_rnn_states, rnn_states_critic = self.collect_adv(step)
+                    adv_rnn_states, belief_rnn_states, rnn_states_critic = self.collect_adv(
+                        step)
                 input_actions = actions.copy()
 
-                for agent_adv in range(self.agent_adversarys):
-                    input_actions[self.episode_adversary, self.agent_adv] = adv_actions[self.episode_adversary, self.agent_adv]
+                for agent_adv in self.agent_adversarys:
+                    input_actions[self.episode_adversary,
+                                  agent_adv] = adv_actions[self.episode_adversary, agent_adv]
 
-
-                #input_actions[self.episode_adversary, self.agent_adversary] = adv_actions[self.episode_adversary, self.agent_adversary]
-
+                # input_actions[self.episode_adversary, self.agent_adversary] = adv_actions[self.episode_adversary, self.agent_adversary]
 
                 # actions: (n_threads, n_agents, action_dim)
-                obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(input_actions)
+                obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(
+                    input_actions)
                 # obs: (n_threads, n_agents, obs_dim)
                 # share_obs: (n_threads, n_agents, share_obs_dim)
                 # rewards: (n_threads, n_agents, 1)
@@ -281,12 +301,14 @@ class OnPolicyMARunnerAdvtBelief:
 
             if episode % self.victim_interval == 0:
                 if self.share_param:
-                    actor_train_infos, critic_train_info = self.share_param_train()  # train adversary and victim
+                    # train adversary and victim
+                    actor_train_infos, critic_train_info = self.share_param_train()
                 else:
                     actor_train_infos, critic_train_info = self.train()
             else:
                 if self.share_param:
-                    actor_train_infos, critic_train_info = self.share_param_train_adv()  # train adversary only
+                    # train adversary only
+                    actor_train_infos, critic_train_info = self.share_param_train_adv()
                 else:
                     actor_train_infos, critic_train_info = self.train_adv()
             # log information
@@ -316,7 +338,8 @@ class OnPolicyMARunnerAdvtBelief:
         for agent_id in range(self.num_agents):
             self.actor_buffer[agent_id].obs[0] = obs[:, agent_id].copy()
             if self.actor_buffer[agent_id].available_actions is not None:
-                self.actor_buffer[agent_id].available_actions[0] = available_actions[:, agent_id].copy()
+                self.actor_buffer[agent_id].available_actions[0] = available_actions[:, agent_id].copy(
+                )
         if self.state_type == "EP":
             self.critic_buffer.share_obs[0] = share_obs[:, 0].copy()
         elif self.state_type == "FP":
@@ -337,7 +360,8 @@ class OnPolicyMARunnerAdvtBelief:
             rnn_state_collector.append(_t2n(rnn_state))
         # [self.envs, agents, dim]
         actions = np.array(action_collector).transpose(1, 0, 2)
-        action_log_probs = np.array(action_log_prob_collector).transpose(1, 0, 2)
+        action_log_probs = np.array(
+            action_log_prob_collector).transpose(1, 0, 2)
         rnn_states = np.array(rnn_state_collector).transpose(1, 0, 2, 3)
 
         if self.state_type == "EP":
@@ -345,13 +369,16 @@ class OnPolicyMARunnerAdvtBelief:
                                                              self.critic_buffer.rnn_states_critic[step],
                                                              self.critic_buffer.masks[step])
             values = np.array(np.split(_t2n(value), self.n_rollout_threads))
-            rnn_states_critic = np.array(np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
+            rnn_states_critic = np.array(
+                np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
         elif self.state_type == "FP":
             value, rnn_state_critic = self.critic.get_values(np.concatenate(self.critic_buffer.share_obs[step]),
-                                                             np.concatenate(self.critic_buffer.rnn_states_critic[step]),
+                                                             np.concatenate(
+                                                                 self.critic_buffer.rnn_states_critic[step]),
                                                              np.concatenate(self.critic_buffer.masks[step]))
             values = np.array(np.split(_t2n(value), self.n_rollout_threads))
-            rnn_states_critic = np.array(np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
+            rnn_states_critic = np.array(
+                np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
 
         return values, actions, action_log_probs, rnn_states, rnn_states_critic
 
@@ -383,7 +410,8 @@ class OnPolicyMARunnerAdvtBelief:
                                                                        self.actor_buffer[agent_id].masks[step])
             if self.teacher_forcing and np.random.rand() < self.belief_prob:
                 belief = self.ground_truth_type[:, agent_id]
-            self.actor_buffer[agent_id].obs[step][:, -self.num_agents:] = _t2n(belief)
+            self.actor_buffer[agent_id].obs[step][:, -
+                                                  self.num_agents:] = _t2n(belief)
 
             action, action_log_prob, rnn_state = self.actor[agent_id].get_actions(self.actor_buffer[agent_id].obs[step],
                                                                                   self.actor_buffer[agent_id].rnn_states[step],
@@ -394,17 +422,18 @@ class OnPolicyMARunnerAdvtBelief:
             action_log_prob_collector.append(_t2n(action_log_prob))
             rnn_state_collector.append(_t2n(rnn_state))
             belief_rnn_state_collector.append(_t2n(belief_rnn_state))
-        
+
         for agent_id in range(self.num_agents):
             adv_obs = self.actor_buffer[agent_id].obs[step].copy()
             adv_obs[:, -self.num_agents:] = np.eye(self.num_agents)[agent_id]
             if self.super_adversary:
-                def_act = np.concatenate([*action_collector[-self.num_agents:][:agent_id], 
+                def_act = np.concatenate([*action_collector[-self.num_agents:][:agent_id],
                                           *action_collector[-self.num_agents:][agent_id + 1:]], axis=-1)
                 adv_obs = np.concatenate([adv_obs, softmax(def_act)], axis=-1)
             # currently we do not require adversary to have a belief. might need it if communication was added, but not for now
             adv_action, adv_action_log_prob, adv_rnn_state = self.actor[agent_id].get_adv_actions(adv_obs,
-                                                                                                  self.actor_buffer[agent_id].adv_rnn_states[step],
+                                                                                                  self.actor_buffer[
+                                                                                                      agent_id].adv_rnn_states[step],
                                                                                                   self.actor_buffer[agent_id].masks[step],
                                                                                                   self.actor_buffer[agent_id].available_actions[step] if self.actor_buffer[agent_id].available_actions is not None else None)
             adv_action_collector.append(_t2n(adv_action))
@@ -413,17 +442,22 @@ class OnPolicyMARunnerAdvtBelief:
         # [self.envs, agents, dim]
         belief = np.array(belief_collector).transpose(1, 0, 2)
         actions = np.array(action_collector).transpose(1, 0, 2)
-        action_log_probs = np.array(action_log_prob_collector).transpose(1, 0, 2)
+        action_log_probs = np.array(
+            action_log_prob_collector).transpose(1, 0, 2)
         adv_actions = np.array(adv_action_collector).transpose(1, 0, 2)
-        adv_action_log_probs = np.array(adv_action_log_prob_collector).transpose(1, 0, 2)
+        adv_action_log_probs = np.array(
+            adv_action_log_prob_collector).transpose(1, 0, 2)
         rnn_states = np.array(rnn_state_collector).transpose(1, 0, 2, 3)
-        belief_rnn_states = np.array(belief_rnn_state_collector).transpose(1, 0, 2, 3)
-        adv_rnn_states = np.array(adv_rnn_state_collector).transpose(1, 0, 2, 3)
+        belief_rnn_states = np.array(
+            belief_rnn_state_collector).transpose(1, 0, 2, 3)
+        adv_rnn_states = np.array(
+            adv_rnn_state_collector).transpose(1, 0, 2, 3)
         print(adv_actions)
         # TODO: active_masks???
         if self.central_belief_option == 'mean':
             belief_central = belief.mean(axis=1)
-            belief_central = np.expand_dims(belief_central, axis=1).repeat(self.num_agents, axis=1)
+            belief_central = np.expand_dims(
+                belief_central, axis=1).repeat(self.num_agents, axis=1)
         else:
             belief_central = belief
 
@@ -431,31 +465,37 @@ class OnPolicyMARunnerAdvtBelief:
         if self.state_type == "EP":
             if self.teacher_forcing and np.random.rand() < self.belief_prob:
                 belief_central = self.ground_truth_type
-            self.critic_buffer.share_obs[step][:, -self.num_agents:] = belief_central.mean(axis=1)
-            
+            self.critic_buffer.share_obs[step][:, -
+                                               self.num_agents:] = belief_central.mean(axis=1)
+
             # need to change to be compatible to our setting?
             value, rnn_state_critic = self.critic.get_values(np.concatenate(self.critic_buffer.share_obs[step]),
-                                                             np.concatenate(self.critic_buffer.rnn_states_critic[step]),
+                                                             np.concatenate(
+                                                                 self.critic_buffer.rnn_states_critic[step]),
                                                              np.concatenate(self.critic_buffer.masks[step]))
             values = np.array(np.split(_t2n(value), self.n_rollout_threads))
-            rnn_states_critic = np.array(np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
+            rnn_states_critic = np.array(
+                np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
         elif self.state_type == "FP":
             if self.teacher_forcing and np.random.rand() < self.belief_prob:
                 belief_central = self.ground_truth_type
-            self.critic_buffer.share_obs[step][:, :, -self.num_agents:] = belief_central
+            self.critic_buffer.share_obs[step][:,
+                                               :, -self.num_agents:] = belief_central
 
             value, rnn_state_critic = self.critic.get_values(np.concatenate(self.critic_buffer.share_obs[step]),
-                                                             np.concatenate(self.critic_buffer.rnn_states_critic[step]),
+                                                             np.concatenate(
+                                                                 self.critic_buffer.rnn_states_critic[step]),
                                                              np.concatenate(self.critic_buffer.masks[step]))
             values = np.array(np.split(_t2n(value), self.n_rollout_threads))
-            rnn_states_critic = np.array(np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
+            rnn_states_critic = np.array(
+                np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
 
         return values, actions, adv_actions, action_log_probs, adv_action_log_probs, rnn_states, adv_rnn_states, belief_rnn_states, rnn_states_critic
 
     def insert(self, data):
         obs, share_obs, rewards, dones, infos, ground_truth_type, available_actions, \
-                    values, actions, adv_actions, action_log_probs, adv_action_log_probs, \
-                    rnn_states, adv_rnn_states, belief_rnn_states, rnn_states_critic = data
+            values, actions, adv_actions, action_log_probs, adv_action_log_probs, \
+            rnn_states, adv_rnn_states, belief_rnn_states, rnn_states_critic = data
 
         dones_env = np.all(dones, axis=1)
 
@@ -474,7 +514,8 @@ class OnPolicyMARunnerAdvtBelief:
             ), self.num_agents, self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
 
         # masks use 0 to mask out threads that just finish
-        masks = np.ones((self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
+        masks = np.ones(
+            (self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
         masks[dones_env == True] = np.zeros(
             ((dones_env == True).sum(), self.num_agents, 1), dtype=np.float32)
 
@@ -489,37 +530,44 @@ class OnPolicyMARunnerAdvtBelief:
         adv_active_masks = active_masks.copy()
         active_masks[self.episode_adversary, self.agent_adversary] = 0
         adv_active_masks[~self.episode_adversary] = 0
-        adv_active_masks[:, np.arange(self.num_agents)!=self.agent_adversary] = 0
+        adv_active_masks[:, np.arange(
+            self.num_agents) != self.agent_adversary] = 0
 
         # bad_masks use 0 to denote truncation and 1 to denote termination
         if self.state_type == "EP":
-            bad_masks = np.array([[0.0] if "bad_transition" in info[0].keys() and info[0]["bad_transition"] == True else [1.0] for info in infos])
+            bad_masks = np.array([[0.0] if "bad_transition" in info[0].keys(
+            ) and info[0]["bad_transition"] == True else [1.0] for info in infos])
         elif self.state_type == "FP":
             bad_masks = np.array([[[0.0] if "bad_transition" in info[agent_id].keys(
             ) and info[agent_id]['bad_transition'] == True else [1.0] for agent_id in range(self.num_agents)] for info in infos])
 
         for agent_id in range(self.num_agents):
             self.actor_buffer[agent_id].insert(obs[:, agent_id], ground_truth_type[:, agent_id], rnn_states[:, agent_id], adv_rnn_states[:, agent_id], belief_rnn_states[:, agent_id], actions[:, agent_id], adv_actions[:, agent_id],
-                                               action_log_probs[:, agent_id], adv_action_log_probs[:, agent_id], rewards[:, agent_id], masks[:, agent_id], active_masks[:, agent_id],
+                                               action_log_probs[:, agent_id], adv_action_log_probs[:, agent_id], rewards[:,
+                                                                                                                         agent_id], masks[:, agent_id], active_masks[:, agent_id],
                                                adv_active_masks[:, agent_id], available_actions[:, agent_id] if available_actions[0] is not None else None)
 
         if self.state_type == "EP":
-            self.critic_buffer.insert(share_obs, rnn_states_critic, values, rewards, masks, bad_masks)
+            self.critic_buffer.insert(
+                share_obs, rnn_states_critic, values, rewards, masks, bad_masks)
         elif self.state_type == "FP":
-            self.critic_buffer.insert(share_obs, rnn_states_critic, values, rewards, masks, bad_masks)
+            self.critic_buffer.insert(
+                share_obs, rnn_states_critic, values, rewards, masks, bad_masks)
 
     @torch.no_grad()
     # calculate value using decentralized belief as advantage function
     def compute(self):
         if self.state_type == "EP":
             next_value, _ = self.critic.get_values(np.concatenate(self.critic_buffer.share_obs[-1]),
-                                                   np.concatenate(self.critic_buffer.rnn_states_critic[-1]),
+                                                   np.concatenate(
+                                                       self.critic_buffer.rnn_states_critic[-1]),
                                                    np.concatenate(self.critic_buffer.masks[-1]))
             next_value = np.array(
                 np.split(_t2n(next_value), self.n_rollout_threads))
         elif self.state_type == "FP":
             next_value, _ = self.critic.get_values(np.concatenate(self.critic_buffer.share_obs[-1]),
-                                                   np.concatenate(self.critic_buffer.rnn_states_critic[-1]),
+                                                   np.concatenate(
+                                                       self.critic_buffer.rnn_states_critic[-1]),
                                                    np.concatenate(self.critic_buffer.masks[-1]))
             next_value = np.array(
                 np.split(_t2n(next_value), self.n_rollout_threads))
@@ -532,18 +580,22 @@ class OnPolicyMARunnerAdvtBelief:
 
         if self.value_normalizer is not None:
             advantages = self.critic_buffer.returns[:-1] - \
-                self.value_normalizer.denormalize(self.critic_buffer.value_preds[:-1])
+                self.value_normalizer.denormalize(
+                    self.critic_buffer.value_preds[:-1])
         else:
-            advantages = self.critic_buffer.returns[:-1] - self.critic_buffer.value_preds[:-1]
+            advantages = self.critic_buffer.returns[:-
+                                                    1] - self.critic_buffer.value_preds[:-1]
 
         if self.state_type == "FP":
-            active_masks_collector = [self.actor_buffer[i].active_masks for i in range(self.num_agents)]
+            active_masks_collector = [
+                self.actor_buffer[i].active_masks for i in range(self.num_agents)]
             active_masks_array = np.stack(active_masks_collector, axis=2)
             advantages_copy = advantages.copy()
             advantages_copy[active_masks_array[:-1] == 0.0] = np.nan
             mean_advantages = np.nanmean(advantages_copy)
             std_advantages = np.nanstd(advantages_copy)
-            advantages = (advantages - mean_advantages) / (std_advantages + 1e-5)
+            advantages = (advantages - mean_advantages) / \
+                (std_advantages + 1e-5)
 
         for agent_id in range(self.num_agents):
             if self.state_type == "EP":
@@ -564,18 +616,22 @@ class OnPolicyMARunnerAdvtBelief:
 
         if self.value_normalizer is not None:
             advantages = self.critic_buffer.returns[:-1] - \
-                self.value_normalizer.denormalize(self.critic_buffer.value_preds[:-1])
+                self.value_normalizer.denormalize(
+                    self.critic_buffer.value_preds[:-1])
         else:
-            advantages = self.critic_buffer.returns[:-1] - self.critic_buffer.value_preds[:-1]
+            advantages = self.critic_buffer.returns[:-
+                                                    1] - self.critic_buffer.value_preds[:-1]
 
         if self.state_type == "FP":
-            active_masks_collector = [self.actor_buffer[i].active_masks for i in range(self.num_agents)]
+            active_masks_collector = [
+                self.actor_buffer[i].active_masks for i in range(self.num_agents)]
             active_masks_array = np.stack(active_masks_collector, axis=2)
             advantages_copy = advantages.copy()
             advantages_copy[active_masks_array[:-1] == 0.0] = np.nan
             mean_advantages = np.nanmean(advantages_copy)
             std_advantages = np.nanstd(advantages_copy)
-            advantages = (advantages - mean_advantages) / (std_advantages + 1e-5)
+            advantages = (advantages - mean_advantages) / \
+                (std_advantages + 1e-5)
 
         for agent_id in range(self.num_agents):
             if self.state_type == "EP":
@@ -597,32 +653,38 @@ class OnPolicyMARunnerAdvtBelief:
 
         if self.value_normalizer is not None:
             advantages = self.critic_buffer.returns[:-1] - \
-                self.value_normalizer.denormalize(self.critic_buffer.value_preds[:-1])
+                self.value_normalizer.denormalize(
+                    self.critic_buffer.value_preds[:-1])
         else:
-            advantages = self.critic_buffer.returns[:-1] - self.critic_buffer.value_preds[:-1]
+            advantages = self.critic_buffer.returns[:-
+                                                    1] - self.critic_buffer.value_preds[:-1]
 
         if self.state_type == "FP":
-            active_masks_collector = [self.actor_buffer[i].active_masks for i in range(self.num_agents)]
+            active_masks_collector = [
+                self.actor_buffer[i].active_masks for i in range(self.num_agents)]
             active_masks_array = np.stack(active_masks_collector, axis=2)
             advantages_copy = advantages.copy()
             advantages_copy[active_masks_array[:-1] == 0.0] = np.nan
             mean_advantages = np.nanmean(advantages_copy)
             std_advantages = np.nanstd(advantages_copy)
-            advantages = (advantages - mean_advantages) / (std_advantages + 1e-5)
+            advantages = (advantages - mean_advantages) / \
+                (std_advantages + 1e-5)
 
         actor_train_info = self.actor[0].share_param_train(
             self.actor_buffer, advantages.copy(), self.num_agents, self.state_type)
 
         if self.eval_critic_landscape:
-            self.critic.visualize_critic_value_landscape(self.critic_buffer, self.value_normalizer)
+            self.critic.visualize_critic_value_landscape(
+                self.critic_buffer, self.value_normalizer)
 
-        critic_train_info = self.critic.train(self.critic_buffer, self.value_normalizer)
-        
+        critic_train_info = self.critic.train(
+            self.critic_buffer, self.value_normalizer)
+
         if self.algo_name == "mappo_advt_belief":
             actor_train_info_belief = self.actor[0].share_param_train_belief(
                 self.actor_buffer, advantages.copy(), self.num_agents, self.state_type)
             actor_train_info.update(actor_train_info_belief)
- 
+
         for agent_id in torch.randperm(self.num_agents):
             actor_train_infos.append(actor_train_info)
 
@@ -636,27 +698,31 @@ class OnPolicyMARunnerAdvtBelief:
 
         if self.value_normalizer is not None:
             advantages = self.critic_buffer.returns[:-1] - \
-                self.value_normalizer.denormalize(self.critic_buffer.value_preds[:-1])
+                self.value_normalizer.denormalize(
+                    self.critic_buffer.value_preds[:-1])
         else:
-            advantages = self.critic_buffer.returns[:-1] - self.critic_buffer.value_preds[:-1]
+            advantages = self.critic_buffer.returns[:-
+                                                    1] - self.critic_buffer.value_preds[:-1]
 
         if self.state_type == "FP":
-            active_masks_collector = [self.actor_buffer[i].active_masks for i in range(self.num_agents)]
+            active_masks_collector = [
+                self.actor_buffer[i].active_masks for i in range(self.num_agents)]
             active_masks_array = np.stack(active_masks_collector, axis=2)
             advantages_copy = advantages.copy()
             advantages_copy[active_masks_array[:-1] == 0.0] = np.nan
             mean_advantages = np.nanmean(advantages_copy)
             std_advantages = np.nanstd(advantages_copy)
-            advantages = (advantages - mean_advantages) / (std_advantages + 1e-5)
+            advantages = (advantages - mean_advantages) / \
+                (std_advantages + 1e-5)
 
         actor_train_info = self.actor[0].share_param_train_adv(
             self.actor_buffer, advantages.copy(), self.num_agents, self.state_type)
-        
+
         if self.algo_name == "mappo_advt_belief":
             actor_train_info_belief = self.actor[0].share_param_train_belief(
                 self.actor_buffer, advantages.copy(), self.num_agents, self.state_type)
             actor_train_info.update(actor_train_info_belief)
-        
+
         for agent_id in torch.randperm(self.num_agents):
             actor_train_infos.append(actor_train_info)
 
@@ -677,21 +743,25 @@ class OnPolicyMARunnerAdvtBelief:
         eval_rnn_states = np.zeros((self.n_eval_rollout_threads, self.num_agents,
                                    self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
         eval_rnn_states_belief = np.zeros((self.n_eval_rollout_threads, self.num_agents,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-        eval_masks = np.ones((self.n_eval_rollout_threads, self.num_agents, 1), dtype=np.float32)
-        
-        ground_truth_type = np.zeros((self.n_eval_rollout_threads, self.num_agents, self.num_agents))
+                                           self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+        eval_masks = np.ones((self.n_eval_rollout_threads,
+                             self.num_agents, 1), dtype=np.float32)
+
+        ground_truth_type = np.zeros(
+            (self.n_eval_rollout_threads, self.num_agents, self.num_agents))
 
         while True:
             eval_actions_collector = []
             eval_belief_collector = []
-            
+
             for agent_id in range(self.num_agents):
                 eval_belief, temp_rnn_state_belief = \
                     self.actor[agent_id].get_belief(eval_obs[:, agent_id],
-                                             eval_rnn_states_belief[:, agent_id],
-                                             eval_masks[:, agent_id])
-                eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
+                                                    eval_rnn_states_belief[:,
+                                                                           agent_id],
+                                                    eval_masks[:, agent_id])
+                eval_rnn_states_belief[:, agent_id] = _t2n(
+                    temp_rnn_state_belief)
                 eval_belief_collector.append(_t2n(eval_belief))
 
                 if self.teacher_forcing and np.random.rand() < self.belief_prob:
@@ -702,7 +772,8 @@ class OnPolicyMARunnerAdvtBelief:
                     self.actor[agent_id].act(eval_obs[:, agent_id],
                                              eval_rnn_states[:, agent_id],
                                              eval_masks[:, agent_id],
-                                             eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                             eval_available_actions[:,
+                                                                    agent_id] if eval_available_actions[0] is not None else None,
                                              deterministic=False)
                 eval_rnn_states[:, agent_id] = _t2n(temp_rnn_state)
                 eval_actions_collector.append(_t2n(eval_actions))
@@ -756,11 +827,13 @@ class OnPolicyMARunnerAdvtBelief:
         eval_adv_rnn_states = np.zeros((eval_obs.shape[0], self.num_agents,
                                         self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
         eval_rnn_states_belief = np.zeros((eval_obs.shape[0], self.num_agents,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-        eval_masks = np.ones((eval_obs.shape[0], self.num_agents, 1), dtype=np.float32)
-        
+                                           self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+        eval_masks = np.ones(
+            (eval_obs.shape[0], self.num_agents, 1), dtype=np.float32)
+
         while True:
-            ground_truth_type = np.zeros((self.n_eval_rollout_threads, self.num_agents, self.num_agents))
+            ground_truth_type = np.zeros(
+                (self.n_eval_rollout_threads, self.num_agents, self.num_agents))
             ground_truth_type[:, :, adv_id] = 1
 
             eval_actions_collector = []
@@ -769,10 +842,12 @@ class OnPolicyMARunnerAdvtBelief:
                 obs = eval_obs[:, agent_id]
                 eval_belief, temp_rnn_state_belief = \
                     self.actor[agent_id].get_belief(obs,
-                                            eval_rnn_states_belief[:, agent_id],
-                                            eval_masks[:, agent_id])
-                eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
-                
+                                                    eval_rnn_states_belief[:,
+                                                                           agent_id],
+                                                    eval_masks[:, agent_id])
+                eval_rnn_states_belief[:, agent_id] = _t2n(
+                    temp_rnn_state_belief)
+
                 if self.teacher_forcing and np.random.rand() < self.belief_prob:
                     eval_belief = ground_truth_type[:, agent_id]
                 obs[:, -self.num_agents:] = _t2n(eval_belief)
@@ -781,9 +856,10 @@ class OnPolicyMARunnerAdvtBelief:
                     clean_obs = obs.copy()
                     obs = self.fgsm(obs,
                                     eval_rnn_states[:, agent_id],
-                                    eval_adv_rnn_states[:, agent_id], 
+                                    eval_adv_rnn_states[:, agent_id],
                                     eval_masks[:, agent_id],
-                                    eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                    eval_available_actions[:,
+                                                           agent_id] if eval_available_actions[0] is not None else None,
                                     agent_id=agent_id)
                 else:
                     obs = eval_obs[:, agent_id]
@@ -791,42 +867,54 @@ class OnPolicyMARunnerAdvtBelief:
 
                 _, eval_clean_action_probs, _ = \
                     self.actor[agent_id].act_with_probs(clean_obs,
-                                             eval_rnn_states[:, agent_id],
-                                             eval_masks[:, agent_id],
-                                             eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
-                                             deterministic=False)
+                                                        eval_rnn_states[:,
+                                                                        agent_id],
+                                                        eval_masks[:,
+                                                                   agent_id],
+                                                        eval_available_actions[:,
+                                                                               agent_id] if eval_available_actions[0] is not None else None,
+                                                        deterministic=False)
 
                 eval_actions, eval_action_probs, temp_rnn_state = \
                     self.actor[agent_id].act_with_probs(obs,
-                                             eval_rnn_states[:, agent_id],
-                                             eval_masks[:, agent_id],
-                                             eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
-                                             deterministic=False)
-                    
+                                                        eval_rnn_states[:,
+                                                                        agent_id],
+                                                        eval_masks[:,
+                                                                   agent_id],
+                                                        eval_available_actions[:,
+                                                                               agent_id] if eval_available_actions[0] is not None else None,
+                                                        deterministic=False)
+
                 eval_rnn_states[:, agent_id] = _t2n(temp_rnn_state)
                 eval_actions_collector.append(_t2n(eval_actions))
 
                 if agent_id == adv_id:
-                    action_changes.append(torch.norm(eval_clean_action_probs - eval_action_probs, p=1).item() / np.prod(eval_action_probs.shape))
+                    action_changes.append(torch.norm(
+                        eval_clean_action_probs - eval_action_probs, p=1).item() / np.prod(eval_action_probs.shape))
 
             for agent_id in range(self.num_agents):
                 adv_obs = eval_obs[:, agent_id].copy()
-                adv_obs[:, -self.num_agents:] = np.eye(self.num_agents)[agent_id]
+                adv_obs[:, -
+                        self.num_agents:] = np.eye(self.num_agents)[agent_id]
                 if self.super_adversary:
-                    def_act = np.concatenate([*eval_actions_collector[-self.num_agents:][:agent_id], 
+                    def_act = np.concatenate([*eval_actions_collector[-self.num_agents:][:agent_id],
                                               *eval_actions_collector[-self.num_agents:][agent_id + 1:]], axis=-1)
-                    adv_obs = np.concatenate([adv_obs, softmax(def_act)], axis=-1)
+                    adv_obs = np.concatenate(
+                        [adv_obs, softmax(def_act)], axis=-1)
                 eval_adv_actions, temp_adv_rnn_state = \
-                    self.actor[agent_id].act_adv(adv_obs, # [:, :-self.num_agents],
-                                                 eval_adv_rnn_states[:, agent_id],
+                    self.actor[agent_id].act_adv(adv_obs,  # [:, :-self.num_agents],
+                                                 eval_adv_rnn_states[:,
+                                                                     agent_id],
                                                  eval_masks[:, agent_id],
-                                                 eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                                 eval_available_actions[:,
+                                                                        agent_id] if eval_available_actions[0] is not None else None,
                                                  deterministic=False)
                 eval_adv_rnn_states[:, agent_id] = _t2n(temp_adv_rnn_state)
                 eval_adv_actions_collector.append(_t2n(eval_adv_actions))
 
             eval_actions = np.array(eval_actions_collector).transpose(1, 0, 2)
-            eval_adv_actions = np.array(eval_adv_actions_collector).transpose(1, 0, 2)
+            eval_adv_actions = np.array(
+                eval_adv_actions_collector).transpose(1, 0, 2)
 
             # Obser reward and next obs
             eval_obs, eval_share_obs, eval_rewards, eval_dones, eval_infos, eval_available_actions = self.eval_envs.step(
@@ -862,17 +950,20 @@ class OnPolicyMARunnerAdvtBelief:
         eval_rnn_states = np.zeros((eval_obs.shape[0], self.num_agents,
                                    self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
         eval_rnn_states_belief = np.zeros((eval_obs.shape[0], self.num_agents,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-        eval_masks = np.ones((eval_obs.shape[0], self.num_agents, 1), dtype=np.float32)
+                                           self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+        eval_masks = np.ones(
+            (eval_obs.shape[0], self.num_agents, 1), dtype=np.float32)
 
-        ground_truth_type = np.zeros((eval_obs.shape[0], self.num_agents, self.num_agents))
+        ground_truth_type = np.zeros(
+            (eval_obs.shape[0], self.num_agents, self.num_agents))
 
         eval_action_probs_collector = []
         for agent_id in range(self.num_agents):
             eval_belief, temp_rnn_state_belief = \
                 self.actor[agent_id].get_belief(eval_obs[:, agent_id],
-                                            eval_rnn_states_belief[:, agent_id],
-                                            eval_masks[:, agent_id])
+                                                eval_rnn_states_belief[:,
+                                                                       agent_id],
+                                                eval_masks[:, agent_id])
             eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
 
             if self.teacher_forcing and np.random.rand() < self.belief_prob:
@@ -881,12 +972,14 @@ class OnPolicyMARunnerAdvtBelief:
 
             _, eval_action_probs, _ = \
                 self.actor[agent_id].act_with_probs(eval_obs[:, agent_id],
-                                                    eval_rnn_states[:, agent_id],
+                                                    eval_rnn_states[:,
+                                                                    agent_id],
                                                     eval_masks[:, agent_id],
                                                     None, deterministic=False)
             eval_action_probs_collector.append(_t2n(eval_action_probs))
 
-        eval_action_probs = np.array(eval_action_probs_collector).transpose(1, 0, 2)
+        eval_action_probs = np.array(
+            eval_action_probs_collector).transpose(1, 0, 2)
 
         self.logger.eval_log_actions(eval_action_probs)
 
@@ -912,11 +1005,13 @@ class OnPolicyMARunnerAdvtBelief:
         eval_adv_rnn_states = np.zeros((eval_obs.shape[0], self.num_agents,
                                         self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
         eval_rnn_states_belief = np.zeros((eval_obs.shape[0], self.num_agents,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-        eval_masks = np.ones((eval_obs.shape[0], self.num_agents, 1), dtype=np.float32)
+                                           self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+        eval_masks = np.ones(
+            (eval_obs.shape[0], self.num_agents, 1), dtype=np.float32)
 
         obs_offset = self.algo_args['algo'].get('obs_offset', 0)
-        eval_transfer_obs = np.zeros((eval_obs.shape[0], self.num_agents, eval_obs.shape[2] + obs_offset))
+        eval_transfer_obs = np.zeros(
+            (eval_obs.shape[0], self.num_agents, eval_obs.shape[2] + obs_offset))
         if obs_offset >= 0:
             eval_transfer_obs[:, :, :eval_obs.shape[2]] = eval_obs
         else:
@@ -924,9 +1019,10 @@ class OnPolicyMARunnerAdvtBelief:
         if obs_offset > 0:
             transfer_adv_len = eval_obs.shape[2] - self.num_agents + adv_id
             eval_transfer_obs[:, :, transfer_adv_len] = 1
-        
+
         while True:
-            ground_truth_type = np.zeros((self.n_eval_rollout_threads, self.num_agents, self.num_agents))
+            ground_truth_type = np.zeros(
+                (self.n_eval_rollout_threads, self.num_agents, self.num_agents))
             ground_truth_type[:, :, adv_id] = 1
 
             eval_actions_collector = []
@@ -934,10 +1030,12 @@ class OnPolicyMARunnerAdvtBelief:
             for agent_id in range(self.num_agents):
                 eval_belief, temp_rnn_state_belief = \
                     self.actor[agent_id].get_belief(eval_obs[:, agent_id],
-                                            eval_rnn_states_belief[:, agent_id],
-                                            eval_masks[:, agent_id])
-                eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
-                
+                                                    eval_rnn_states_belief[:,
+                                                                           agent_id],
+                                                    eval_masks[:, agent_id])
+                eval_rnn_states_belief[:, agent_id] = _t2n(
+                    temp_rnn_state_belief)
+
                 if self.teacher_forcing and np.random.rand() < self.belief_prob:
                     eval_belief = ground_truth_type[:, agent_id]
                 eval_obs[:, agent_id, -self.num_agents:] = _t2n(eval_belief)
@@ -946,9 +1044,10 @@ class OnPolicyMARunnerAdvtBelief:
                     self.actor[agent_id].act(eval_obs[:, agent_id],
                                              eval_rnn_states[:, agent_id],
                                              eval_masks[:, agent_id],
-                                             eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                             eval_available_actions[:,
+                                                                    agent_id] if eval_available_actions[0] is not None else None,
                                              deterministic=False)
-                    
+
                 eval_rnn_states[:, agent_id] = _t2n(temp_rnn_state)
                 eval_actions_collector.append(_t2n(eval_actions))
 
@@ -957,20 +1056,24 @@ class OnPolicyMARunnerAdvtBelief:
                 adv_obs = eval_transfer_obs[:, agent_id].copy()
                 # adv_obs[:, -self.num_agents:] = np.eye(self.num_agents)[agent_id]
                 if self.super_adversary:
-                    def_act = np.concatenate([*eval_actions_collector[-self.num_agents:][:agent_id], 
+                    def_act = np.concatenate([*eval_actions_collector[-self.num_agents:][:agent_id],
                                               *eval_actions_collector[-self.num_agents:][agent_id + 1:]], axis=-1)
-                    adv_obs = np.concatenate([adv_obs, softmax(def_act)], axis=-1)
+                    adv_obs = np.concatenate(
+                        [adv_obs, softmax(def_act)], axis=-1)
                 eval_adv_actions, temp_adv_rnn_state = \
                     self.actor[agent_id].act_adv(adv_obs,
-                                                 eval_adv_rnn_states[:, agent_id],
+                                                 eval_adv_rnn_states[:,
+                                                                     agent_id],
                                                  eval_masks[:, agent_id],
-                                                 eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                                 eval_available_actions[:,
+                                                                        agent_id] if eval_available_actions[0] is not None else None,
                                                  deterministic=False)
                 eval_adv_rnn_states[:, agent_id] = _t2n(temp_adv_rnn_state)
                 eval_adv_actions_collector.append(_t2n(eval_adv_actions))
 
             eval_actions = np.array(eval_actions_collector).transpose(1, 0, 2)
-            eval_adv_actions = np.array(eval_adv_actions_collector).transpose(1, 0, 2)
+            eval_adv_actions = np.array(
+                eval_adv_actions_collector).transpose(1, 0, 2)
             eval_actions[:, adv_id] = eval_adv_actions[:, adv_id]
 
             # Obser reward and next obs
@@ -986,7 +1089,6 @@ class OnPolicyMARunnerAdvtBelief:
             if obs_offset > 0:
                 transfer_adv_len = eval_obs.shape[2] - self.num_agents + adv_id
                 eval_transfer_obs[:, :, transfer_adv_len] = 1
-
 
             eval_data = eval_obs, eval_share_obs, eval_rewards, eval_dones, eval_infos, eval_available_actions
             self.logger.eval_per_step(eval_data)
@@ -1011,7 +1113,8 @@ class OnPolicyMARunnerAdvtBelief:
                 ret_mean = self.logger.eval_log_adv(eval_episode, adv_id)
                 break
 
-        self.adapt_adv_probs[adv_id] = np.mean(self.logger.eval_episode_rewards)
+        self.adapt_adv_probs[adv_id] = np.mean(
+            self.logger.eval_episode_rewards)
 
     @torch.no_grad()
     def eval_analytical(self):
@@ -1037,38 +1140,46 @@ class OnPolicyMARunnerAdvtBelief:
         eval_rnn_states = np.zeros((self.n_eval_rollout_threads, self.num_agents,
                                    self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
         eval_rnn_states_belief = np.zeros((self.n_eval_rollout_threads, self.num_agents,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-        eval_masks = np.ones((self.n_eval_rollout_threads, self.num_agents, 1), dtype=np.float32)
+                                           self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+        eval_masks = np.ones((self.n_eval_rollout_threads,
+                             self.num_agents, 1), dtype=np.float32)
 
         while True:
-            ground_truth_type = np.zeros((self.n_eval_rollout_threads, self.num_agents, self.num_agents))
+            ground_truth_type = np.zeros(
+                (self.n_eval_rollout_threads, self.num_agents, self.num_agents))
             ground_truth_type[:, :, adv_id] = 1
-            
+
             eval_actions_collector = []
             eval_action_probs_collector = []
             for agent_id in range(self.num_agents):
                 eval_belief, temp_rnn_state_belief = \
                     self.actor[agent_id].get_belief(eval_obs[:, agent_id],
-                                            eval_rnn_states_belief[:, agent_id],
-                                            eval_masks[:, agent_id])
-                eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
-                
+                                                    eval_rnn_states_belief[:,
+                                                                           agent_id],
+                                                    eval_masks[:, agent_id])
+                eval_rnn_states_belief[:, agent_id] = _t2n(
+                    temp_rnn_state_belief)
+
                 if self.teacher_forcing and np.random.rand() < self.belief_prob:
                     eval_belief = ground_truth_type[:, agent_id]
                 eval_obs[:, agent_id, -self.num_agents:] = _t2n(eval_belief)
-                
+
                 eval_actions, eval_action_probs, temp_rnn_state = \
                     self.actor[agent_id].act_with_probs(eval_obs[:, agent_id],
-                                                        eval_rnn_states[:, agent_id],
-                                                        eval_masks[:, agent_id],
-                                                        eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                                        eval_rnn_states[:,
+                                                                        agent_id],
+                                                        eval_masks[:,
+                                                                   agent_id],
+                                                        eval_available_actions[:,
+                                                                               agent_id] if eval_available_actions[0] is not None else None,
                                                         deterministic=False)
                 eval_rnn_states[:, agent_id] = _t2n(temp_rnn_state)
                 eval_action_probs_collector.append(_t2n(eval_action_probs))
                 eval_actions_collector.append(_t2n(eval_actions))
 
             eval_actions = np.array(eval_actions_collector).transpose(1, 0, 2)
-            eval_action_probs = np.array(eval_action_probs_collector).transpose(1, 0, 2)
+            eval_action_probs = np.array(
+                eval_action_probs_collector).transpose(1, 0, 2)
 
             adv_actions = self.get_adv_actions(eval_obs, eval_action_probs)
             eval_actions[:, adv_id] = adv_actions[:, adv_id]
@@ -1098,8 +1209,9 @@ class OnPolicyMARunnerAdvtBelief:
                 # eval_log returns whether the current model should be saved
                 self.logger.eval_log_analytical(eval_episode, adv_id)
                 break
-    
-        self.adapt_adv_probs[adv_id] = np.mean(self.logger.eval_episode_rewards)
+
+        self.adapt_adv_probs[adv_id] = np.mean(
+            self.logger.eval_episode_rewards)
         return np.mean(self.logger.eval_episode_rewards)
 
     @torch.no_grad()
@@ -1113,18 +1225,25 @@ class OnPolicyMARunnerAdvtBelief:
 
         features = []
         hooks = []
+
         def hook_fn(module, input, output):
             features.append(output.detach().cpu().numpy())
 
         if "ddpg" in self.args.algo:
             for ii in range(self.num_agents):
-                hooks.append(self.actor[0].maddpg[ii].actor.pi.mlp[1].register_forward_hook(hook_fn))
-                hooks.append(self.actor[0].maddpg[ii].actor.pi.mlp[3].register_forward_hook(hook_fn))
-                hooks.append(self.actor[0].maddpg[ii].actor.pi.mlp[5].register_forward_hook(hook_fn))
+                hooks.append(
+                    self.actor[0].maddpg[ii].actor.pi.mlp[1].register_forward_hook(hook_fn))
+                hooks.append(
+                    self.actor[0].maddpg[ii].actor.pi.mlp[3].register_forward_hook(hook_fn))
+                hooks.append(
+                    self.actor[0].maddpg[ii].actor.pi.mlp[5].register_forward_hook(hook_fn))
         else:
-            hooks.append(self.actor[0].actor.base.mlp.fc[2].register_forward_hook(hook_fn))
-            hooks.append(self.actor[0].actor.base.mlp.fc[5].register_forward_hook(hook_fn))
-            hooks.append(self.actor[0].actor.base.mlp.fc[8].register_forward_hook(hook_fn))
+            hooks.append(
+                self.actor[0].actor.base.mlp.fc[2].register_forward_hook(hook_fn))
+            hooks.append(
+                self.actor[0].actor.base.mlp.fc[5].register_forward_hook(hook_fn))
+            hooks.append(
+                self.actor[0].actor.base.mlp.fc[8].register_forward_hook(hook_fn))
 
         if self.manual_expand_dims:
             for _ in range(self.render_episodes):
@@ -1135,8 +1254,9 @@ class OnPolicyMARunnerAdvtBelief:
                 eval_rnn_states = np.zeros((self.env_num, self.num_agents,
                                             self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
                 eval_rnn_states_belief = np.zeros((self.env_num, self.num_agents,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-                eval_masks = np.ones((self.env_num, self.num_agents, 1), dtype=np.float32)
+                                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+                eval_masks = np.ones(
+                    (self.env_num, self.num_agents, 1), dtype=np.float32)
                 rewards = 0
                 while True:
                     eval_actions_collector = []
@@ -1144,31 +1264,40 @@ class OnPolicyMARunnerAdvtBelief:
                     eval_belief_collector = []
                     for agent_id in range(self.num_agents):
                         eval_belief, temp_rnn_state_belief = \
-                                            self.actor[agent_id].get_belief(eval_obs[:, agent_id],
-                                            eval_rnn_states_belief[:, agent_id],
-                                            eval_masks[:, agent_id])
-                        eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
+                            self.actor[agent_id].get_belief(eval_obs[:, agent_id],
+                                                            eval_rnn_states_belief[:,
+                                                                                   agent_id],
+                                                            eval_masks[:, agent_id])
+                        eval_rnn_states_belief[:, agent_id] = _t2n(
+                            temp_rnn_state_belief)
                         eval_belief_collector.append(_t2n(eval_belief))
 
-                        eval_obs[:, agent_id, -self.num_agents:] = _t2n(eval_belief)
+                        eval_obs[:, agent_id, -
+                                 self.num_agents:] = _t2n(eval_belief)
                         eval_actions, eval_action_probs, temp_rnn_state = \
                             self.actor[agent_id].act_with_probs(eval_obs[:, agent_id],
-                                                                eval_rnn_states[:, agent_id],
-                                                                eval_masks[:, agent_id],
-                                                                eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                                                eval_rnn_states[:,
+                                                                                agent_id],
+                                                                eval_masks[:,
+                                                                           agent_id],
+                                                                eval_available_actions[:, agent_id] if eval_available_actions[
+                                                                    0] is not None else None,
                                                                 deterministic=False)
                         eval_rnn_states[:, agent_id] = _t2n(temp_rnn_state)
                         eval_actions_collector.append(_t2n(eval_actions))
-                        eval_action_probs_collector.append(_t2n(eval_action_probs))
-                    eval_actions = np.array(eval_actions_collector).transpose(1, 0, 2)
-                    eval_action_probs = np.array(eval_action_probs_collector).transpose(1, 0, 2)
-                    eval_belief = np.array(eval_belief_collector).transpose(1, 0, 2)
+                        eval_action_probs_collector.append(
+                            _t2n(eval_action_probs))
+                    eval_actions = np.array(
+                        eval_actions_collector).transpose(1, 0, 2)
+                    eval_action_probs = np.array(
+                        eval_action_probs_collector).transpose(1, 0, 2)
+                    eval_belief = np.array(
+                        eval_belief_collector).transpose(1, 0, 2)
 
                     obs_traj.append(eval_obs)
                     action_traj.append(eval_actions)
                     action_prob_traj.append(eval_action_probs)
                     belief_traj.append(eval_belief)
-
 
                     # Obser reward and next obs
                     eval_obs, _, eval_rewards, eval_dones, _, eval_available_actions = self.envs.step(
@@ -1207,10 +1336,12 @@ class OnPolicyMARunnerAdvtBelief:
             hook.remove()
         features_cat = []
         for i in range(len(features)//3):
-            features_cat.append(np.concatenate([features[3*i], features[3*i+1], features[3*i+2]], axis=1))
+            features_cat.append(np.concatenate(
+                [features[3*i], features[3*i+1], features[3*i+2]], axis=1))
         features_cat = np.concatenate(features_cat)
-        np.save(r'C:\Users\Administrator\Desktop\DRL\EIR-MAPPO-main\eir_mappo\traj\features.npy', features_cat)
-        #np.save(f"traj/{self.args.exp_name}_features.npy", features_cat)
+        np.save(
+            r'C:\Users\Administrator\Desktop\DRL\EIR-MAPPO-main\eir_mappo\traj\features.npy', features_cat)
+        # np.save(f"traj/{self.args.exp_name}_features.npy", features_cat)
 
     @torch.no_grad()
     def render_adv(self):
@@ -1231,18 +1362,25 @@ class OnPolicyMARunnerAdvtBelief:
 
         features = []
         hooks = []
+
         def hook_fn(module, input, output):
             features.append(output.detach().cpu().numpy())
 
         if "ddpg" in self.args.algo:
             for ii in range(self.num_agents):
-                hooks.append(self.actor[0].maddpg[ii].actor.pi.mlp[1].register_forward_hook(hook_fn))
-                hooks.append(self.actor[0].maddpg[ii].actor.pi.mlp[3].register_forward_hook(hook_fn))
-                hooks.append(self.actor[0].maddpg[ii].actor.pi.mlp[5].register_forward_hook(hook_fn))
+                hooks.append(
+                    self.actor[0].maddpg[ii].actor.pi.mlp[1].register_forward_hook(hook_fn))
+                hooks.append(
+                    self.actor[0].maddpg[ii].actor.pi.mlp[3].register_forward_hook(hook_fn))
+                hooks.append(
+                    self.actor[0].maddpg[ii].actor.pi.mlp[5].register_forward_hook(hook_fn))
         else:
-            hooks.append(self.actor[0].actor.base.mlp.fc[2].register_forward_hook(hook_fn))
-            hooks.append(self.actor[0].actor.base.mlp.fc[5].register_forward_hook(hook_fn))
-            hooks.append(self.actor[0].actor.base.mlp.fc[8].register_forward_hook(hook_fn))
+            hooks.append(
+                self.actor[0].actor.base.mlp.fc[2].register_forward_hook(hook_fn))
+            hooks.append(
+                self.actor[0].actor.base.mlp.fc[5].register_forward_hook(hook_fn))
+            hooks.append(
+                self.actor[0].actor.base.mlp.fc[8].register_forward_hook(hook_fn))
 
         if self.manual_expand_dims:
             for _ in range(self.render_episodes):
@@ -1252,12 +1390,13 @@ class OnPolicyMARunnerAdvtBelief:
                 eval_available_actions = np.expand_dims(np.array(
                     eval_available_actions), axis=0) if eval_available_actions is not None else None
                 eval_rnn_states = np.zeros((self.env_num, self.num_agents,
-                                        self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+                                            self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
                 eval_rnn_states_belief = np.zeros((self.env_num, self.num_agents,
-                                        self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+                                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
                 eval_adv_rnn_states = np.zeros((self.env_num, self.num_agents,
-                                        self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-                eval_masks = np.ones((self.env_num, self.num_agents, 1), dtype=np.float32)
+                                                self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+                eval_masks = np.ones(
+                    (self.env_num, self.num_agents, 1), dtype=np.float32)
                 rewards = 0
                 while True:
                     eval_actions_collector = []
@@ -1266,43 +1405,60 @@ class OnPolicyMARunnerAdvtBelief:
                     eval_belief_collector = []
                     for agent_id in range(self.num_agents):
                         eval_belief, temp_rnn_state_belief = \
-                                            self.actor[agent_id].get_belief(eval_obs[:, agent_id],
-                                            eval_rnn_states_belief[:, agent_id],
-                                            eval_masks[:, agent_id])
-                        eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
+                            self.actor[agent_id].get_belief(eval_obs[:, agent_id],
+                                                            eval_rnn_states_belief[:,
+                                                                                   agent_id],
+                                                            eval_masks[:, agent_id])
+                        eval_rnn_states_belief[:, agent_id] = _t2n(
+                            temp_rnn_state_belief)
                         eval_belief_collector.append(_t2n(eval_belief))
 
-                        eval_obs[:, agent_id, -self.num_agents:] = _t2n(eval_belief)
+                        eval_obs[:, agent_id, -
+                                 self.num_agents:] = _t2n(eval_belief)
                         eval_actions, eval_action_probs, temp_rnn_state = \
                             self.actor[agent_id].act_with_probs(eval_obs[:, agent_id],
-                                                                eval_rnn_states[:, agent_id],
-                                                                eval_masks[:, agent_id],
-                                                                eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                                                eval_rnn_states[:,
+                                                                                agent_id],
+                                                                eval_masks[:,
+                                                                           agent_id],
+                                                                eval_available_actions[:, agent_id] if eval_available_actions[
+                                                                    0] is not None else None,
                                                                 deterministic=False)
                         eval_rnn_states[:, agent_id] = _t2n(temp_rnn_state)
                         eval_actions_collector.append(_t2n(eval_actions))
-                        eval_action_probs_collector.append(_t2n(eval_action_probs))
+                        eval_action_probs_collector.append(
+                            _t2n(eval_action_probs))
 
                     for agent_id in range(self.num_agents):
                         if self.super_adversary:
-                            def_act = np.concatenate([*eval_actions_collector[-self.num_agents:][:agent_id], 
-                                                    *eval_actions_collector[-self.num_agents:][agent_id + 1:]], axis=-1)
-                            adv_obs = np.concatenate([eval_obs[:, agent_id], softmax(def_act)], axis=-1)
+                            def_act = np.concatenate([*eval_actions_collector[-self.num_agents:][:agent_id],
+                                                      *eval_actions_collector[-self.num_agents:][agent_id + 1:]], axis=-1)
+                            adv_obs = np.concatenate(
+                                [eval_obs[:, agent_id], softmax(def_act)], axis=-1)
                         else:
                             adv_obs = eval_obs[:, agent_id]
                         eval_adv_actions, temp_adv_rnn_state = \
                             self.actor[agent_id].act_adv(adv_obs,
-                                                    eval_adv_rnn_states[:, agent_id],
-                                                    eval_masks[:, agent_id],
-                                                    eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
-                                                    deterministic=False)
-                        eval_adv_rnn_states[:, agent_id] = _t2n(temp_adv_rnn_state)
-                        eval_adv_actions_collector.append(_t2n(eval_adv_actions))
+                                                         eval_adv_rnn_states[:,
+                                                                             agent_id],
+                                                         eval_masks[:,
+                                                                    agent_id],
+                                                         eval_available_actions[:,
+                                                                                agent_id] if eval_available_actions[0] is not None else None,
+                                                         deterministic=False)
+                        eval_adv_rnn_states[:, agent_id] = _t2n(
+                            temp_adv_rnn_state)
+                        eval_adv_actions_collector.append(
+                            _t2n(eval_adv_actions))
 
-                    eval_actions = np.array(eval_actions_collector).transpose(1, 0, 2)
-                    eval_adv_actions = np.array(eval_adv_actions_collector).transpose(1, 0, 2)
-                    eval_action_probs = np.array(eval_action_probs_collector).transpose(1, 0, 2)
-                    eval_belief = np.array(eval_belief_collector).transpose(1, 0, 2)
+                    eval_actions = np.array(
+                        eval_actions_collector).transpose(1, 0, 2)
+                    eval_adv_actions = np.array(
+                        eval_adv_actions_collector).transpose(1, 0, 2)
+                    eval_action_probs = np.array(
+                        eval_action_probs_collector).transpose(1, 0, 2)
+                    eval_belief = np.array(
+                        eval_belief_collector).transpose(1, 0, 2)
 
                     eval_actions[:, adv_id] = eval_adv_actions[:, adv_id]
 
@@ -1317,7 +1473,7 @@ class OnPolicyMARunnerAdvtBelief:
                     eval_obs = np.expand_dims(np.array(eval_obs), axis=0)
 
                     eval_available_actions = np.expand_dims(np.array(
-                    eval_available_actions), axis=0) if eval_available_actions is not None else None
+                        eval_available_actions), axis=0) if eval_available_actions is not None else None
                     if self.manual_render:
                         if "smac" not in self.args.env:  # replay for smac, no rendering
                             self.envs.render()
@@ -1336,7 +1492,7 @@ class OnPolicyMARunnerAdvtBelief:
                     self.envs.save_replay()
         else:
             raise NotImplementedError
-        
+
         # np.save("traj/obs.npy", np.array(obs_traj))
         # np.save("traj/action.npy", np.array(action_traj))
         # np.save("traj/action_prob.npy", np.array(action_prob_traj))
@@ -1347,10 +1503,12 @@ class OnPolicyMARunnerAdvtBelief:
             hook.remove()
         features_cat = []
         for i in range(len(features)//3):
-            features_cat.append(np.concatenate([features[3*i], features[3*i+1], features[3*i+2]], axis=1))
+            features_cat.append(np.concatenate(
+                [features[3*i], features[3*i+1], features[3*i+2]], axis=1))
         features_cat = np.concatenate(features_cat)
 
-        np.save(f"traj/{self.args.exp_name}_adv{adv_id}_features.npy", features_cat)
+        np.save(
+            f"traj/{self.args.exp_name}_adv{adv_id}_features.npy", features_cat)
 
     @torch.no_grad()
     def render_adv_state(self):
@@ -1377,10 +1535,11 @@ class OnPolicyMARunnerAdvtBelief:
                 eval_rnn_states = np.zeros((self.env_num, self.num_agents,
                                             self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
                 eval_rnn_states_belief = np.zeros((self.env_num, self.num_agents,
-                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+                                                   self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
                 eval_adv_rnn_states = np.zeros((self.env_num, self.num_agents,
-                                        self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
-                eval_masks = np.ones((self.env_num, self.num_agents, 1), dtype=np.float32)
+                                                self.recurrent_N, self.rnn_hidden_size), dtype=np.float32)
+                eval_masks = np.ones(
+                    (self.env_num, self.num_agents, 1), dtype=np.float32)
                 rewards = 0
                 while True:
                     eval_actions_collector = []
@@ -1390,39 +1549,49 @@ class OnPolicyMARunnerAdvtBelief:
                         if agent_id == adv_id:
                             obs = self.fgsm(eval_obs[:, agent_id],
                                             eval_rnn_states[:, agent_id],
-                                            eval_adv_rnn_states[:, agent_id], 
+                                            eval_adv_rnn_states[:, agent_id],
                                             eval_masks[:, agent_id],
-                                            eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                            eval_available_actions[:,
+                                                                   agent_id] if eval_available_actions[0] is not None else None,
                                             agent_id=agent_id)
                         else:
                             obs = eval_obs[:, agent_id]
 
                         eval_belief, temp_rnn_state_belief = \
-                                            self.actor[agent_id].get_belief(obs,
-                                            eval_rnn_states_belief[:, agent_id],
-                                            eval_masks[:, agent_id])
-                        eval_rnn_states_belief[:, agent_id] = _t2n(temp_rnn_state_belief)
+                            self.actor[agent_id].get_belief(obs,
+                                                            eval_rnn_states_belief[:,
+                                                                                   agent_id],
+                                                            eval_masks[:, agent_id])
+                        eval_rnn_states_belief[:, agent_id] = _t2n(
+                            temp_rnn_state_belief)
                         eval_belief_collector.append(_t2n(eval_belief))
 
-                        eval_obs[:, agent_id, -self.num_agents:] = _t2n(eval_belief)
+                        eval_obs[:, agent_id, -
+                                 self.num_agents:] = _t2n(eval_belief)
                         eval_actions, eval_action_probs, temp_rnn_state = \
                             self.actor[agent_id].act_with_probs(obs,
-                                                                eval_rnn_states[:, agent_id],
-                                                                eval_masks[:, agent_id],
-                                                                eval_available_actions[:, agent_id] if eval_available_actions[0] is not None else None,
+                                                                eval_rnn_states[:,
+                                                                                agent_id],
+                                                                eval_masks[:,
+                                                                           agent_id],
+                                                                eval_available_actions[:, agent_id] if eval_available_actions[
+                                                                    0] is not None else None,
                                                                 deterministic=False)
                         eval_rnn_states[:, agent_id] = _t2n(temp_rnn_state)
                         eval_actions_collector.append(_t2n(eval_actions))
-                        eval_action_probs_collector.append(_t2n(eval_action_probs))
-                    eval_actions = np.array(eval_actions_collector).transpose(1, 0, 2)
-                    eval_action_probs = np.array(eval_action_probs_collector).transpose(1, 0, 2)
-                    eval_belief = np.array(eval_belief_collector).transpose(1, 0, 2)
+                        eval_action_probs_collector.append(
+                            _t2n(eval_action_probs))
+                    eval_actions = np.array(
+                        eval_actions_collector).transpose(1, 0, 2)
+                    eval_action_probs = np.array(
+                        eval_action_probs_collector).transpose(1, 0, 2)
+                    eval_belief = np.array(
+                        eval_belief_collector).transpose(1, 0, 2)
 
                     obs_traj.append(eval_obs)
                     action_traj.append(eval_actions)
                     action_prob_traj.append(eval_action_probs)
                     belief_traj.append(eval_belief)
-
 
                     # Obser reward and next obs
                     eval_obs, _, eval_rewards, eval_dones, _, eval_available_actions = self.envs.step(
