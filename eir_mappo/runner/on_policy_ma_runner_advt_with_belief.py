@@ -452,7 +452,6 @@ class OnPolicyMARunnerAdvtBelief:
             belief_rnn_state_collector).transpose(1, 0, 2, 3)
         adv_rnn_states = np.array(
             adv_rnn_state_collector).transpose(1, 0, 2, 3)
-        print(adv_actions)
         # TODO: active_masks???
         if self.central_belief_option == 'mean':
             belief_central = belief.mean(axis=1)
