@@ -7,10 +7,15 @@
 python train.py --algo mappo_advt_belief --env smac --exp_name smac_test
 ```
 
-`5m_vs_4m`
+`5m_vs_3m`
 
 ```python
 python train.py --algo mappo_advt_belief --env smac_5m_vs_3m --exp_name smac_5m_vs_3m_400w
+```
+
+`7m_vs_5m`
+```python
+python train.py --algo mappo_advt_belief --env smac_7m_vs_5m --exp_name smac_7m_vs_5m_400w
 ```
 
 ## 实验结果
@@ -23,7 +28,17 @@ python train.py --algo mappo_advt_belief --env smac_5m_vs_3m --exp_name smac_5m_
 
 1. `4m_vs_3m`
 2. `episodes_timestep` 4000000
-3. 结果: /home/ZhangXingYi/codes/EIR-MAPPO/eir_mappo/results/smac/4m_vs_3m/mappo_advt_belief/smac_test/1/run7$
+3. 结果: /home/ZhangXingYi/codes/EIR-MAPPO/eir_mappo/results/smac/4m_vs_3m/mappo_advt_belief/smac_test/1/run7
+
+### 5m_vs_3m
+
+#### 2024-4-20
+
+`settings`:
+
+1. `5m_vs_3m`
+2. `episodes_timestep` 4000000
+3. 结果: /home/ZhangXingYi/codes/EIR-MAPPO/eir_mappo/results/smac_5m_vs_3m/5m_vs_3m/mappo_advt_belief/smac_5m_vs_3m_400w/1/run9
 
 ## 笔记
 

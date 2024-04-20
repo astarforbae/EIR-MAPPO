@@ -340,6 +340,9 @@ def init_dir(env, env_args, algo, exp_name, seed):
     elif env == "smac_5m_vs_3m":
         run_dir = Path(os.path.split(os.path.dirname(os.path.abspath(__file__)))[
             0] + "/results") / env / env_args["map_name"] / algo / exp_name / str(seed)
+    elif env == "smac_7m_vs_5m":
+        run_dir = Path(os.path.split(os.path.dirname(os.path.abspath(__file__)))[
+            0] + "/results") / env / env_args["map_name"] / algo / exp_name / str(seed)
     elif env == "smacv2":
         run_dir = Path(os.path.split(os.path.dirname(os.path.abspath(__file__)))[
             0] + "/results") / env / env_args["map_name"] / algo / exp_name / str(seed)
