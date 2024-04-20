@@ -1,10 +1,29 @@
 ## 运行
 
 运行命令：
+`origin`
 
 ```python
 python train.py --algo mappo_advt_belief --env smac --exp_name smac_test
 ```
+
+`5m_vs_4m`
+
+```python
+python train.py --algo mappo_advt_belief --env smac_5m_vs_3m --exp_name smac_5m_vs_3m_100w
+```
+
+## 实验结果
+
+### Origin
+
+#### 2024-4-20
+
+`settings`:
+
+1. `4m_vs_3m`
+2. `episodes_timestep` 4000000
+3. 结果: /home/ZhangXingYi/codes/EIR-MAPPO/eir_mappo/results/smac/4m_vs_3m/mappo_advt_belief/smac_test/1/run7$
 
 ## 笔记
 
