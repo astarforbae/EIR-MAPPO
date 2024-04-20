@@ -10,7 +10,7 @@ python train.py --algo mappo_advt_belief --env smac --exp_name smac_test
 `5m_vs_4m`
 
 ```python
-python train.py --algo mappo_advt_belief --env smac_5m_vs_3m --exp_name smac_5m_vs_3m_100w
+python train.py --algo mappo_advt_belief --env smac_5m_vs_3m --exp_name smac_5m_vs_3m_400w
 ```
 
 ## 实验结果
