@@ -112,6 +112,12 @@ def make_train_env(env_name, seed, n_threads, env_args):
             if env_name == "smac" or env_name == "smac_traitor":
                 from eir_mappo.env.smac.StarCraft2_Env import StarCraft2Env
                 env = StarCraft2Env(env_args)
+            elif env_name == "smac_5m_vs_3m" :
+                from eir_mappo.env.smac.StarCraft2_Env import StarCraft2Env
+                env = StarCraft2Env(env_args)
+            elif env_name == "smac_7m_vs_5m" :
+                from eir_mappo.env.smac.StarCraft2_Env import StarCraft2Env
+                env = StarCraft2Env(env_args)
             elif env_name == "smacv2":
                 from eir_mappo.env.smacv2.smacv2_env import SMACv2Env
                 env = SMACv2Env(env_args)
@@ -422,6 +428,10 @@ def get_num_agents(env, env_args, envs):
         from eir_mappo.env.smac.smac_maps import get_map_params
         return get_map_params(env_args["map_name"])["n_agents"]
     elif env == "smacv2":
+        return envs.n_agents
+    elif env == "smac_5m_vs_3m":
+        return envs.n_agents
+    elif env == "smac_7m_vs_5m":
         return envs.n_agents
     elif env == "mamujoco":
         return envs.n_agents
