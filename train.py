@@ -25,7 +25,7 @@ def main():
         choices=[
             "toy",
             "smac",
-            "smac_5m_vs_3m",
+            "smac_5m_vs_3m"
             "smac_traitor",
             "mamujoco",
             "pettingzoo_mpe",
