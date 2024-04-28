@@ -42,8 +42,8 @@ map_param_registry = {
         "map_type": "marines",
     },
         "7m_vs_5m": {
-        "n_agents": 4,
-        "n_enemies": 3,
+        "n_agents": 7,
+        "n_enemies": 5,
         "limit": 60,
         "a_race": "T",
         "b_race": "T",

@@ -40,6 +40,20 @@ python train.py --algo mappo_advt_belief --env smac_7m_vs_5m --exp_name smac_7m_
 2. `episodes_timestep` 4000000
 3. 结果: /home/ZhangXingYi/codes/EIR-MAPPO/eir_mappo/results/smac_5m_vs_3m/5m_vs_3m/mappo_advt_belief/smac_5m_vs_3m_400w/1/run9
 
+### 7m_vs_5m
+
+#### 2024-4-20
+
+`settings`:
+1. `7m_vs_5m`
+2. `episodes_timestep` 4000000
+3. 结果: /home/ZhangXingYi/codes/EIR-MAPPO/eir_mappo/results/smac_7m_vs_5m/7m_vs_5m/mappo_advt_belief/smac_7m_vs_5m_400w/1/run3
+
+#### 2024-4-21
+`settings`:
+1. `7m_vs_5m`:
+2. `episodes_timestep` 10000000
+3. 结果: /home/ZhangXingYi/codes/EIR-MAPPO/eir_mappo/results/smac_7m_vs_5m/7m_vs_5m/mappo_advt_belief/smac_7m_vs_5m_1kw/1/run5
 ## 笔记
 
 环境：`ShareDummyVecEnv([StarCraft2Env()])` in util.py
